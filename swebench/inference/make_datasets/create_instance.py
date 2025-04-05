@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unidiff
 from tqdm.auto import tqdm
+from datetime import datetime
 
 from swebench.inference.make_datasets.tokenize_dataset import TOKENIZER_FUNCS
 from swebench.inference.make_datasets.utils import (
@@ -347,6 +348,7 @@ def add_text_inputs(
     tokenizer_name=None,
     verbose=False,
     progress_file=None,
+    copy_repo_from_host_path=None,
 ) -> None:
     """Process instances and save results to progress file.
 
@@ -407,7 +409,8 @@ def add_text_inputs(
                 desc="Processing instances",
             ):
                 try:
-                    with AutoContextManager(instance, root_dir, verbose=verbose) as cm:
+                    with AutoContextManager(instance, root_dir, verbose=verbose,
+                                             copy_repo_from_host_path=copy_repo_from_host_path) as cm:
                         # Process instance
                         processed_instance = deepcopy(instance)
 
@@ -471,13 +474,13 @@ def add_text_inputs(
                             }
 
                         # Generate final text inputs
-                        processed_instance["text_inputs"] = PROMPT_FUNCTIONS[
+                        processed_instance["text"] = PROMPT_FUNCTIONS[
                             prompt_style
                         ](processed_instance)
 
                         # Save to progress file
                         progress_file_handle.write(
-                            json.dumps(processed_instance) + "\n"
+                            json.dumps(processed_instance, cls=DateTimeEncoder) + "\n"
                         )
                         progress_file_handle.flush()
 
@@ -485,11 +488,17 @@ def add_text_inputs(
                     print(f"Failed on instance {instance_id}", e)
                     traceback.print_exc()
                     # Save failed instance
-                    failed_instance = {**instance, "text_inputs": None}
-                    progress_file_handle.write(json.dumps(failed_instance) + "\n")
+                    failed_instance = {**instance, "text": None}
+                    progress_file_handle.write(json.dumps(failed_instance, cls=DateTimeEncoder) + "\n")
                     progress_file_handle.flush()
                 finally:
                     os.chdir(orig_dir)
         os.chdir(orig_dir)
     finally:
         progress_file_handle.close()
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)

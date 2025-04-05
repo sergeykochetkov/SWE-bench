@@ -47,6 +47,7 @@ class TestSpec:
     base_image_tag: str = LATEST
     env_image_tag: str = LATEST
     instance_image_tag: str = LATEST
+    copy_repo_from_host_path: str = None
 
     @property
     def setup_env_script(self):
@@ -130,7 +131,7 @@ class TestSpec:
 
     @property
     def instance_dockerfile(self):
-        return get_dockerfile_instance(self.platform, self.language, self.env_image_key)
+        return get_dockerfile_instance(self.platform, self.language, self.env_image_key, self.copy_repo_from_host_path)
 
     @property
     def platform(self):
@@ -165,8 +166,19 @@ def make_test_spec(
     namespace: str = None,
     base_image_tag: str = LATEST,
     env_image_tag: str = LATEST,
-    instance_image_tag: str = LATEST,
+    instance_image_tag: str = LATEST
 ) -> TestSpec:
+    """
+    Create a test specification for a single instance of SWE-bench.
+    
+    Args:
+        instance: The SWE-bench instance to create a test specification for
+        namespace: The namespace to use for the instance image
+        base_image_tag: The tag to use for the base image
+        env_image_tag: The tag to use for the environment image
+        instance_image_tag: The tag to use for the instance image
+        skip_clone: If True, skip the git clone command
+    """
     if isinstance(instance, TestSpec):
         return instance
     assert base_image_tag is not None, "base_image_tag cannot be None"
@@ -196,9 +208,13 @@ def make_test_spec(
     repo_directory = f"/{env_name}"
     specs = MAP_REPO_VERSION_TO_SPECS[repo][version]
     docker_specs = specs.get("docker_specs", {})
+    copy_repo_from_host_path = specs.get("copy_repo_from_host_path", None)
+    
+
+    skip_git_clone=copy_repo_from_host_path is not None
 
     repo_script_list = make_repo_script_list(
-        specs, repo, repo_directory, base_commit, env_name
+        specs, repo, repo_directory, base_commit, env_name, skip_git_clone
     )
     env_script_list = make_env_script_list(instance, specs, env_name)
     eval_script_list = make_eval_script_list(
@@ -226,4 +242,5 @@ def make_test_spec(
         base_image_tag=base_image_tag,
         env_image_tag=env_image_tag,
         instance_image_tag=instance_image_tag,
+        copy_repo_from_host_path=copy_repo_from_host_path,
     )

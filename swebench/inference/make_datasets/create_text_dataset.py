@@ -2,6 +2,9 @@
 
 """
 Create a dataset for text-to-text training from the raw task instance outputs.
+python swebench/inference/make_datasets/create_text_dataset.py --dataset_name_or_path=princeton-nlp/SWE-bench_Lite --split=dev --output_dir=outputs --retrieval_file=retrieval_file.txt
+python swebench/inference/make_datasets/create_text_dataset.py --dataset_name_or_path=outputs/tasks/langchain-task-instances_cleaned.jsonl --split=train --output_dir=outputs/text_datasets/ --retrieval_file=retrieval_file.txt
+
 """
 
 import json
@@ -10,6 +13,7 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
+import dotenv
 from tqdm.auto import tqdm
 
 from swebench.inference.make_datasets.create_instance import (
@@ -21,6 +25,7 @@ from swebench.inference.make_datasets.tokenize_dataset import TOKENIZER_FUNCS
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+dotenv.load_dotenv()
 
 def load_jsonl_file(filename):
     if type(filename) == str:
@@ -123,6 +128,7 @@ def main(
     max_context_len,
     tokenizer_name,
     push_to_hub_user,
+    copy_repo_from_host_path,
 ):
     # Validate arguments and setup
     hub_token = validate_arguments(
@@ -150,11 +156,14 @@ def main(
             del existing_dataset  # don't store in memory
 
     # Load dataset
-    dataset = (
-        load_from_disk(dataset_name_or_path)
-        if Path(dataset_name_or_path).exists()
-        else load_dataset(dataset_name_or_path)
-    )
+    if Path(dataset_name_or_path).exists():
+        if dataset_name_or_path.endswith(".jsonl"):
+            dataset = load_dataset('json', data_files=dataset_name_or_path)
+        else:
+            dataset = load_from_disk(dataset_name_or_path)
+    else:
+        dataset = load_dataset(dataset_name_or_path)
+        
     logger.info(f"Found {set(dataset.keys())} splits")
     if set(splits) - set(dataset.keys()) != set():
         raise ValueError(f"Unknown splits {set(splits) - set(dataset.keys())}")
@@ -181,6 +190,7 @@ def main(
     progress_files = {}
     for split in splits:
         logger.info(f"Processing {split} split")
+        #split_instances = {x["instance_id"]: x for x in dataset[split].take(1)}
         split_instances = {x["instance_id"]: x for x in dataset[split]}
         progress_file = f"{output_file}.{split}.progress.jsonl"
         progress_files[split] = progress_file
@@ -194,6 +204,8 @@ def main(
             max_context_len=max_context_len,
             tokenizer_name=tokenizer_name,
             progress_file=progress_file,
+            verbose=True,
+            copy_repo_from_host_path=copy_repo_from_host_path,
         )
 
     logger.info("Creating final dataset")
@@ -314,5 +326,11 @@ if __name__ == "__main__":
         "--push_to_hub_user",
         type=str,
         help="Username to use for pushing to the Hub. If not provided, will save to disk.",
+    )
+    parser.add_argument(
+        "--copy_repo_from_host_path",
+        type=str,
+        default=None,
+        help="Path to the directory containing the repo to copy from the host.",
     )
     main(**vars(parser.parse_args()))

@@ -4,7 +4,8 @@
 # * Create a .env file in this folder
 # * Declare GITHUB_TOKENS=token1,token2,token3...
 
-python get_tasks_pipeline.py \
-    --repos 'scikit-learn/scikit-learn', 'pallets/flask' \
-    --path_prs '<path to folder to save PRs to>' \
-    --path_tasks '<path to folder to save tasks to>'
+python -m swebench.collect.get_tasks_pipeline \
+    --repos 'openai/openai-python', 'pydantic/pydantic-ai', 'huggingface/transformers', 'langchain-ai/langchain'\
+    --path_prs 'outputs/prs' \
+    --path_tasks 'outputs/tasks' \
+    --max_pulls 3000
