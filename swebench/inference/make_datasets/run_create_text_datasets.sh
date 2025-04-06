@@ -6,7 +6,8 @@ file_source=bm25
 output_dir=outputs/text_datasets_${file_source}
 
 
-for repo_name in langchain openai-python transformers pydantic-ai
+#for repo_name in langchain openai-python transformers pydantic-ai
+for repo_name in transformers
 do
 
 if [ $file_source == "bm25" ]; then

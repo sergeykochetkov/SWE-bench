@@ -217,12 +217,22 @@ def openai_inference(
     max_cost (float): The maximum cost to spend on inference.
     """
     encoding = tiktoken.encoding_for_model(model_name_or_path)
+    lengths=[]
+    for datum in test_dataset:
+        lengths.append(gpt_tokenize(datum["text"], encoding))
+
+    print(f"Max length: {max(lengths)}")
+    print(f"Min length: {min(lengths)}")
+    print(f"Median length: {np.median(lengths)}")
+    print(f"Mean length: {np.mean(lengths)}")
+    
     test_dataset = test_dataset.filter(
         lambda x: gpt_tokenize(x["text"], encoding) <= MODEL_LIMITS[model_name_or_path],
         desc="Filtering",
         load_from_cache_file=False,
     )
     logger.info(f"Filtered by token length to {len(test_dataset)} instances")
+    
     
     openai_key = os.environ.get("OPENAI_API_KEY", None)
     if openai_key is None:
