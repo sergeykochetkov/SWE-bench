@@ -257,6 +257,122 @@ def prompt_style_3(instance):
     return final_text
 
 
+PATCH_INSTRUCTIONS = """
+When generating patch files (diff files), follow these strict formatting rules:
+
+1. Patch Structure:
+   - Always start with the header lines:
+     ```
+     --- a/path/to/original/file
+     +++ b/path/to/modified/file
+     ```
+   - Include the hunk header with line numbers:
+     ```
+     @@ -start_line,count +start_line,count @@
+     ```
+
+2. Content Formatting:
+   - Each line must start with either:
+     - ` ` (space) for unchanged lines
+     - `-` for removed lines
+     - `+` for added lines
+   - Maintain consistent indentation with the original file
+   - Preserve all whitespace and line endings
+   - Include complete function calls and statements
+   - Never truncate or omit closing brackets, parentheses, or quotes
+
+3. Code Block Rules:
+   - Always include complete code blocks
+   - For multi-line changes, maintain proper indentation
+   - Include all necessary imports and dependencies
+   - Preserve the original file's coding style and conventions
+
+4. Common Pitfalls to Avoid:
+   - Never leave incomplete function calls or statements
+   - Don't omit closing brackets or parentheses
+   - Don't truncate lines in the middle of a statement
+   - Don't mix tabs and spaces
+   - Don't change indentation levels without proper context
+
+5. Validation Checklist:
+   - Verify the patch can be applied with `git apply`
+   - Ensure all function calls are complete
+   - Check that all brackets and parentheses are properly closed
+   - Confirm indentation matches the original file
+   - Validate that the patch maintains the file's structure
+
+6. Example of Correct Formatting:
+   ```diff
+   --- a/file.py
+   +++ b/file.py
+   @@ -10,7 +10,7 @@
+        def example_function():
+            if condition:
+                return True
+   -        return False
+   +        return True
+   ```
+
+7. Error Prevention:
+   - Always include complete context around changes
+   - Maintain proper line endings
+   - Use consistent quote styles
+   - Include all necessary imports
+   - Preserve file encoding
+
+8. Testing:
+   - Verify the patch can be applied cleanly
+   - Check for any syntax errors
+   - Ensure the changes maintain code functionality
+   - Validate against the original file's style guide
+
+Remember: A well-formatted patch should be:
+- Complete (no truncated lines)
+- Consistent (matching original file style)
+- Correct (syntactically valid)
+- Clean (properly formatted)
+- Contextual (includes necessary surrounding code)
+"""
+
+def prompt_style_3_fixed(instance):
+    premise = "You will be provided with a partial code base and an issue statement explaining a problem to resolve. Your task is to change python source files. Be carefull generating patch files, double check python indentation and syntax."
+    readmes_text = make_code_text(instance["readmes"])
+    code_text = make_code_text(instance["file_contents"])
+    example_explanation = (
+        "Here is an example of a patch file. It consists of changes to the code base. "
+        + "It specifies the file names, the line numbers of each change, and the removed and added lines. "
+        + "A single patch file can contain changes to multiple files."
+    )
+    final_instruction = (
+        "I need you to solve the provided issue by generating a single patch file that I can apply "
+        + "directly to this repository using git apply. Please respond with a single patch "
+        + "file in the format shown above."
+    )
+    problem_statement = instance["problem_statement"]
+    final_text = [
+        premise,
+        "<issue>",
+        problem_statement,
+        "</issue>",
+        "",
+        "<code>",
+        readmes_text,
+        code_text,
+        "</code>",
+        "",
+        example_explanation,
+        PATCH_INSTRUCTIONS,
+        "<patch>",
+        PATCH_EXAMPLE,
+        "</patch>",
+        "",
+        final_instruction,
+        "Respond below:",
+    ]
+    final_text = "\n".join(final_text)
+    return final_text
+
+
 def full_file_gen(instance):
     premise = "You will be provided with a partial code base and an issue statement explaining a problem to resolve."
     readmes_text = make_code_text(instance["readmes"], add_line_numbers=False)
@@ -299,6 +415,7 @@ PROMPT_FUNCTIONS = {
     "style-3": prompt_style_3,
     "full_file_gen": full_file_gen,
     "style-2-edits-only": prompt_style_2_edits_only,
+    "style-3-fixed": prompt_style_3_fixed,
 }
 
 
