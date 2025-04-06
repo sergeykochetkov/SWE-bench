@@ -1,3 +1,6 @@
+'''
+python swebench/inference/make_datasets/bm25_retrieval.py --dataset_name_or_path=outputs/text_datasets_oracle/outputs__tasks__langchain-task-instances_cleaned.jsonl__style-3__fs-oracle --copy_repo_from_host_path=repos/langchain/
+'''
 import json
 import os
 import ast
@@ -150,7 +153,7 @@ DOCUMENT_ENCODING_FUNCTIONS = {
 }
 
 
-def clone_repo(repo, root_dir, token):
+def clone_repo(repo, root_dir, token, copy_repo_from_host_path=None):
     """
     Clones a GitHub repository to a specified directory.
 
@@ -163,11 +166,17 @@ def clone_repo(repo, root_dir, token):
         Path: The path to the cloned repository directory.
     """
     repo_dir = Path(root_dir, f"repo__{repo.replace('/', '__')}")
-
-    if not repo_dir.exists():
-        repo_url = f"https://{token}@github.com/{repo}.git"
-        logger.info(f"Cloning {repo} {os.getpid()}")
-        Repo.clone_from(repo_url, repo_dir)
+    if copy_repo_from_host_path is not None:
+        if copy_repo_from_host_path is not None:
+            print(f"Copying {repo} from {copy_repo_from_host_path} to {repo_dir}")
+            if repo_dir.exists():
+                shutil.rmtree(repo_dir)
+            shutil.copytree(copy_repo_from_host_path, repo_dir, symlinks=True)
+    else:
+        if not repo_dir.exists():
+            repo_url = f"https://{token}@github.com/{repo}.git"
+            logger.info(f"Cloning {repo} {os.getpid()}")
+            Repo.clone_from(repo_url, repo_dir)
     return repo_dir
 
 
@@ -389,13 +398,14 @@ def get_index_paths_worker(
     document_encoding_func,
     python,
     token,
+    copy_repo_from_host_path=None
 ):
     index_path = None
     repo = instance["repo"]
     commit = instance["base_commit"]
     instance_id = instance["instance_id"]
     try:
-        repo_dir = clone_repo(repo, root_dir_name, token)
+        repo_dir = clone_repo(repo, root_dir_name, token, copy_repo_from_host_path)
         query = instance["problem_statement"]
         index_path = make_index(
             repo_dir=repo_dir,
@@ -419,6 +429,7 @@ def get_index_paths(
     python: str,
     token: str,
     output_file: str,
+    copy_repo_from_host_path: str = None
 ) -> dict[str, str]:
     """
     Retrieves the index paths for the given instances using multiple processes.
@@ -443,6 +454,7 @@ def get_index_paths(
             document_encoding_func=document_encoding_func,
             python=python,
             token=token,
+            copy_repo_from_host_path=copy_repo_from_host_path,
         )
         if index_path is None:
             continue
@@ -466,6 +478,7 @@ def main(
     num_shards,
     splits,
     leave_indexes,
+    copy_repo_from_host_path=None
 ):
     document_encoding_func = DOCUMENT_ENCODING_FUNCTIONS[document_encoding_style]
     token = os.environ.get("GITHUB_TOKEN", "git")
@@ -500,6 +513,7 @@ def main(
             python,
             token,
             output_file,
+            copy_repo_from_host_path=copy_repo_from_host_path,
         )
     except KeyboardInterrupt:
         logger.info(f"Cleaning up {root_dir}")
@@ -537,9 +551,10 @@ if __name__ == "__main__":
         default="file_name_and_contents",
     )
     parser.add_argument("--output_dir", default="./retreival_results")
-    parser.add_argument("--splits", nargs="+", default=["train", "test"])
+    parser.add_argument("--splits", nargs="+", default=["train"])
     parser.add_argument("--shard_id", type=int)
     parser.add_argument("--num_shards", type=int, default=20)
     parser.add_argument("--leave_indexes", type=string_to_bool, default=True)
+    parser.add_argument("--copy_repo_from_host_path", type=str, default=None)
     args = parser.parse_args()
     main(**vars(args))

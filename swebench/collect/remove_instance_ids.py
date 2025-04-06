@@ -27,9 +27,11 @@ def main():
                 new_dataset.append(instance)
     if args.max_instances is not None:
         new_dataset = new_dataset[:args.max_instances]
-    with open(f"{args.task.replace('.jsonl', '_cleaned.jsonl')}", "w") as f:
+    output_file = args.task.replace(".jsonl", "_cleaned.jsonl")
+    with open(output_file, "w") as f:
         for instance in new_dataset:
             f.write(json.dumps(instance) + "\n")
-
+    print(f"Saved cleaned dataset of {len(new_dataset)} instances to {output_file}")
+    
 if __name__ == "__main__":
     main()
