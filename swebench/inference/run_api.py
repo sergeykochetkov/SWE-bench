@@ -241,7 +241,7 @@ def openai_inference(
     if openai_key is None:
         openai_key = "local"
         print("No OpenAI key found, using local openai-like server on http://0.0.0.0:8000")
-        openai.base_url = "http://0.0.0.0:8000/v1"
+        openai.base_url = "http://0.0.0.0:8000/v1/"
     openai.api_key = openai_key
     print(f"Using OpenAI key {'*' * max(0, len(openai_key) - 5) + openai_key[-5:]}")
     use_azure = model_args.pop("use_azure", False)
