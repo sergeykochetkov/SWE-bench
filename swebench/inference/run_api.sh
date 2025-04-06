@@ -1,10 +1,11 @@
 
-model=gpt-4-1106-preview
+model=qwen-2.5-coder-7b
+#gpt-4-1106-preview
 #gpt-4o
 
 #gpt-4-1106-preview
 
-retrieval=bm25
+retrieval=oracle
 
 for repo_name in transformers pydantic-ai langchain openai-python
 do
