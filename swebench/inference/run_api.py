@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 openai_key = os.environ.get("OPENAI_API_KEY", None)
+if openai_key is None:
+    openai_key = "local"
 
 MODEL_LIMITS = {
     "claude-instant-1": 100_000,
@@ -105,8 +107,7 @@ def set_openai_proxy():
     http_proxy = os.environ.get("HTTP_PROXY")
     https_proxy = os.environ.get("HTTPS_PROXY")
     client_args = {}
-    if openai_key is not None:
-        client_args["api_key"] = openai_key
+    client_args["api_key"] = openai_key
         
     client_args["http_client"] = httpx.Client(proxy=https_proxy)
     
@@ -234,6 +235,7 @@ def openai_inference(
     
     openai_key = os.environ.get("OPENAI_API_KEY", None)
     if openai_key is None:
+        openai_key = "local"
         print("No OpenAI key found, using local openai-like server on http://0.0.0.0:8000")
         openai.base_url = "http://0.0.0.0:8000/v1"
     openai.api_key = openai_key
