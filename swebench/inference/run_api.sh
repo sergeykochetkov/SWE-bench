@@ -1,5 +1,5 @@
 
-model=qwen-2.5-coder-7b
+model=Qwen/Qwen2.5-Coder-7B-Instruct
 #gpt-4-1106-preview
 #gpt-4o
 
