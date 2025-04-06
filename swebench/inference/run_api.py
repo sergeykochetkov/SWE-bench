@@ -104,11 +104,10 @@ def set_openai_proxy():
     # Add proxy configuration
     http_proxy = os.environ.get("HTTP_PROXY")
     https_proxy = os.environ.get("HTTPS_PROXY")
-    
-    client_args = {
-        "api_key": openai_key,
-    }
-    
+    client_args = {}
+    if openai_key is not None:
+        client_args["api_key"] = openai_key
+        
     client_args["http_client"] = httpx.Client(proxy=https_proxy)
     
     # Initialize the client with proxy settings
