@@ -31,10 +31,6 @@ logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 openai_key = os.environ.get("OPENAI_API_KEY", None)
-if openai_key is None:
-    raise ValueError(
-        "Must provide an api key. Expected in OPENAI_API_KEY environment variable."
-    )
 
 MODEL_LIMITS = {
     "claude-instant-1": 100_000,
