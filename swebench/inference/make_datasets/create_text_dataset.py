@@ -23,6 +23,8 @@ from swebench.inference.make_datasets.create_instance import (
 from swebench.inference.make_datasets.tokenize_dataset import TOKENIZER_FUNCS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+#print logging into console
+logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()

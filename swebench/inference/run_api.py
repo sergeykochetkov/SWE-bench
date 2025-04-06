@@ -187,7 +187,7 @@ def call_chat(model_name_or_path, inputs, use_azure, temperature, top_p, **model
 
 def gpt_tokenize(string: str, encoding) -> int:
     """Returns the number of tokens in a text string."""
-    num_tokens = len(encoding.encode(string))
+    num_tokens = len(encoding.encode(string, disallowed_special=(encoding.special_tokens_set - {'<|endoftext|>'})))
     return num_tokens
 
 
@@ -217,11 +217,23 @@ def openai_inference(
     max_cost (float): The maximum cost to spend on inference.
     """
     encoding = tiktoken.encoding_for_model(model_name_or_path)
+    lengths=[]
+    for datum in test_dataset:
+        lengths.append(gpt_tokenize(datum["text"], encoding))
+
+    print(f"Max length: {max(lengths)}")
+    print(f"Min length: {min(lengths)}")
+    print(f"Median length: {np.median(lengths)}")
+    print(f"Mean length: {np.mean(lengths)}")
+    
     test_dataset = test_dataset.filter(
         lambda x: gpt_tokenize(x["text"], encoding) <= MODEL_LIMITS[model_name_or_path],
         desc="Filtering",
         load_from_cache_file=False,
     )
+    logger.info(f"Filtered by token length to {len(test_dataset)} instances")
+    
+    
     openai_key = os.environ.get("OPENAI_API_KEY", None)
     if openai_key is None:
         raise ValueError(
@@ -523,6 +535,7 @@ def main(
         dataset = dataset.select(range(max_instances))
     if shard_id is not None and num_shards is not None:
         dataset = dataset.shard(num_shards, shard_id, contiguous=True)
+    logger.info(f"Running inference for {len(dataset)} instances")
     inference_args = {
         "test_dataset": dataset,
         "model_name_or_path": model_name_or_path,
