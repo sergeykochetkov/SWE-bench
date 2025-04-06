@@ -48,7 +48,7 @@ MODEL_LIMITS = {
     "gpt-4-1106-preview": 128_000,
     "gpt-4-0125-preview": 128_000,
     "gpt-4o": 128_000,
-    "Qwen/Qwen2.5-Coder-7B-Instruct": 32_000
+    "Qwen2.5-Coder-7B-Instruct": 32_000
 }
 
 # The cost per token for each model input.
@@ -70,7 +70,7 @@ MODEL_COST_PER_INPUT = {
     "gpt-4-0125-preview": 0.00001,
     "gpt-4o": 0.0000025,
     "gpt-4o-2024-08-06": 0.0000025,
-    "Qwen/Qwen2.5-Coder-7B-Instruct": 0,
+    "Qwen2.5-Coder-7B-Instruct": 0,
 }
 
 # The cost per token for each model output.
@@ -92,7 +92,7 @@ MODEL_COST_PER_OUTPUT = {
     "gpt-4-0125-preview": 0.00003,
     "gpt-4o": 0.000001,
     "gpt-4o-2024-08-06": 0.000001,
-    "Qwen/Qwen2.5-Coder-7B-Instruct": 0,
+    "Qwen2.5-Coder-7B-Instruct": 0,
 }
 
 # used for azure
@@ -215,7 +215,11 @@ def openai_inference(
     existing_ids (set): A set of ids that have already been processed.
     max_cost (float): The maximum cost to spend on inference.
     """
-    encoding = tiktoken.encoding_for_model(model_name_or_path)
+    try:
+        encoding = tiktoken.encoding_for_model(model_name_or_path)
+    except Exception as e:
+        print(f"Error getting encoding for {model_name_or_path}: {e} will use gpt-4o encoding")
+        encoding = tiktoken.encoding_for_model("gpt-4o")
     lengths=[]
     for datum in test_dataset:
         lengths.append(gpt_tokenize(datum["text"], encoding))
