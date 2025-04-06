@@ -236,9 +236,8 @@ def openai_inference(
     
     openai_key = os.environ.get("OPENAI_API_KEY", None)
     if openai_key is None:
-        raise ValueError(
-            "Must provide an api key. Expected in OPENAI_API_KEY environment variable."
-        )
+        print("No OpenAI key found, using local openai-like server on http://0.0.0.0:8000")
+        openai.base_url = "http://0.0.0.0:8000/v1"
     openai.api_key = openai_key
     print(f"Using OpenAI key {'*' * max(0, len(openai_key) - 5) + openai_key[-5:]}")
     use_azure = model_args.pop("use_azure", False)
@@ -546,10 +545,9 @@ def main(
     }
     if model_name_or_path.startswith("claude"):
         anthropic_inference(**inference_args)
-    elif model_name_or_path.startswith("gpt"):
-        openai_inference(**inference_args)
     else:
-        raise ValueError(f"Invalid model name or path {model_name_or_path}")
+        openai_inference(**inference_args)
+    
     logger.info("Done!")
 
 
