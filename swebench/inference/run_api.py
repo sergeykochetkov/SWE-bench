@@ -34,6 +34,10 @@ openai_key = os.environ.get("OPENAI_API_KEY", None)
 if openai_key is None:
     openai_key = "local"
 
+FULL_MODEL_NAME = {
+    "Qwen2.5-Coder-7B-Instruct": "Qwen/Qwen2.5-Coder-7B-Instruct"
+}
+
 MODEL_LIMITS = {
     "claude-instant-1": 100_000,
     "claude-2": 100_000,
@@ -539,9 +543,11 @@ def main(
     if shard_id is not None and num_shards is not None:
         dataset = dataset.shard(num_shards, shard_id, contiguous=True)
     logger.info(f"Running inference for {len(dataset)} instances")
+
+    full_model_name = FULL_MODEL_NAME[model_name_or_path] if model_name_or_path in FULL_MODEL_NAME else model_name_or_path
     inference_args = {
         "test_dataset": dataset,
-        "model_name_or_path": model_name_or_path,
+        "model_name_or_path": full_model_name,
         "output_file": output_file,
         "model_args": model_args,
         "existing_ids": existing_ids,
